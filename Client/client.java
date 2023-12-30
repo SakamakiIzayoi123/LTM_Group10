@@ -1,3 +1,5 @@
+package Client;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -10,7 +12,7 @@ public class client {
     public static PrintWriter out;
     public static Scanner scanner;
     public static ArrayList<Integer> data = new ArrayList<Integer>();
-    final int portNumber = 12345;`
+    final int portNumber = 12345;
     final String serverAddress = "localhost";
     public static int i_min = 0;
     public static int i_max = 100;
