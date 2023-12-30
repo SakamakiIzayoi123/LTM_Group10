@@ -7,8 +7,8 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-
 import javax.swing.JFrame;
+import javax.swing.JTabbedPane;
 
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
@@ -24,6 +24,7 @@ public class server {
     private static int clientCount = 0;
     private ServerSocket serverSocket;
     public static JFrame frame;
+    public static JTabbedPane tabbedPane = new JTabbedPane();
     public static ArrayList<Integer> data = new ArrayList<Integer>();
     private static int count = 50;
     JFreeChart chart;
@@ -75,26 +76,13 @@ public class server {
 
             // Thêm biểu đồ vào JFrame
             ChartPanel chartPanel = new ChartPanel(chart);
-            // chartPanel.setPreferredSize(new Dimension(300, 200));
-            frame.add(chartPanel);
-
-            // Nút thoát
-            // JButton button = new JButton("Exit");
-            // button.addActionListener(new ActionListener() {
-            //     @Override
-            //     public void actionPerformed(ActionEvent e) {
-            //         destroy();
-            //         System.exit(0);
-            //     }
-            // });
-            // button.setSize(100, 50);
-            // button.setLocation(0, 0);
-            // frame.add(button, BorderLayout.SOUTH);
+            tabbedPane.addTab("Trung bình", chartPanel);
+            frame.add(tabbedPane);
             frame.setVisible(true);
 
             // Thêm dữ liệu mẫu
             for (int i = 0; i < MAX_DATA; i++) {
-                addDataset("Series 1", String.valueOf(i), 0);
+                addDataset("humidity", String.valueOf(i), 0);
             }
 
             Thread thread = new Thread(new Runnable() {
@@ -109,7 +97,7 @@ public class server {
                         avg /= data.size();
                         data.clear();
                         // thêm dữ liệu vào biểu đồ
-                        addDataset("Series 1", String.valueOf(count), avg);
+                        addDataset("humidity", String.valueOf(count), avg);
                         count++;
                         try {
                             Thread.sleep(1000);
@@ -133,6 +121,28 @@ public class server {
                 // Tăng số lượng client
                 clientCount++;
                 System.out.println("Number of clients: " + clientCount);
+
+                CategoryDataset node_dataset = new DefaultCategoryDataset();
+
+                JFreeChart node_Chart = ChartFactory.createLineChart(
+                        "Humidity Line Chart", // Tiêu đề biểu đồ
+                        "Category", // Nhãn trục x
+                        "Humidity(%)", // Nhãn trục y
+                        node_dataset, // Dữ liệu
+                        PlotOrientation.VERTICAL, // Hướng biểu đồ
+                        true, // Hiển thị legend
+                        true, // Hiển thị tooltips
+                        true // Hiển thị URLs
+                );
+
+                node_Chart.getCategoryPlot().getRangeAxis().setRange(0, 100);
+                node_Chart.getCategoryPlot().getDomainAxis().setVisible(false);
+                node_Chart.getCategoryPlot().setDomainGridlinesVisible(false);
+                node_Chart.getLegend().setVisible(false);
+
+                ChartPanel node_chartPanel = new ChartPanel(node_Chart);
+                tabbedPane.addTab("Node" + String.valueOf(clientCount), node_chartPanel);
+                clientHandler.setDataset(node_dataset);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -154,10 +164,15 @@ public class server {
     private static class ClientHandler implements Runnable {
         private final Socket clientSocket;
         private final PrintWriter out;
+        private CategoryDataset node_dataset;
 
         public ClientHandler(Socket clientSocket) throws IOException {
             this.clientSocket = clientSocket;
             this.out = new PrintWriter(clientSocket.getOutputStream(), true);
+        }
+
+        public void setDataset(CategoryDataset node_dataset) {
+            this.node_dataset = node_dataset;
         }
 
         @Override
@@ -183,6 +198,8 @@ public class server {
                     }
 
                     data.add(humidity);
+                    // thêm dữ liệu vào biểu đồ
+                    ((DefaultCategoryDataset) node_dataset).addValue(humidity, "humidity", clientMessage);
                 }
 
                 // Giảm số lượng client khi kết nối đóng
